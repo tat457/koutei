@@ -49,12 +49,21 @@
                 size: A4 portrait;
                 margin: 12mm 10mm;
             }
-            body {
+            html, body {
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
                 font-size: 11pt;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            main {
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+                position: static !important;
             }
             .no-print, header, main > section:not(#previewOverlay) {
                 display: none !important;
@@ -66,16 +75,22 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
                 backdrop-filter: none !important;
                 width: 100% !important;
                 max-width: 100% !important;
             }
             .print-card {
-                border: 1px solid #cbd5e1 !important;
+                border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
-                border-radius: 8px !important;
+                border-radius: 0 !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                display: block !important;
             }
             .print-page-break {
                 break-inside: avoid !important;
@@ -84,6 +99,8 @@
             }
             #documentView {
                 padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
             }
         }
     </style>
@@ -341,6 +358,22 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Google AI Studio等で取得した Gemini APIキーを入力してください。キーを設定すると、キャプチャ画像からタイトル・操作手順をAIが自動解析・記述します。
+            </p>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-400">Gemini API Key</label>
+                <input id="apiKeyInput" type="password" placeholder="AIzaSy..." class="bg-slate-900 border border-slate-700 text-xs text-slate-100 rounded-lg p-2.5 focus:outline-none focus:border-blue-500 font-mono">
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-700">
+                <button onclick="closeApiKeyModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">キャンセル</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow">保存する</button>
+            </div>
+        </div>
+    </div>
 
     <!-- GitHub Export & Gist Modal -->
     <div id="githubModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
