@@ -102,6 +102,12 @@
                 height: auto !important;
                 overflow: visible !important;
             }
+            /* 印刷時の説明テキストフォントサイズ保持 */
+            .print-desc-xs { font-size: 9pt !important; line-height: 1.4 !important; }
+            .print-desc-sm { font-size: 11pt !important; line-height: 1.5 !important; }
+            .print-desc-base { font-size: 13pt !important; line-height: 1.5 !important; }
+            .print-desc-lg { font-size: 15pt !important; line-height: 1.6 !important; }
+            .print-desc-xl { font-size: 17pt !important; line-height: 1.6 !important; }
         }
     </style>
 </head>
@@ -309,12 +315,26 @@
             <div class="max-w-4xl mx-auto bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden min-h-[85vh] flex flex-col print-card">
                 
                 <!-- Preview Header Bar (Screen only) -->
-                <div class="no-print bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <div class="no-print bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                     <div class="flex items-center gap-2">
                         <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded">印刷・PDFプレビュー</span>
                         <p class="text-xs text-slate-500">印刷時の見栄えを確認できます</p>
                     </div>
-                    <div class="flex items-center gap-2">
+
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Font Size Selector for Description -->
+                        <div class="flex items-center gap-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 shadow-sm">
+                            <i data-lucide="type" class="w-4 h-4 text-slate-500"></i>
+                            <span class="font-medium">説明文字サイズ:</span>
+                            <select id="printFontSizeSelect" onchange="changePrintFontSize(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
+                                <option value="text-xs">小 (12px)</option>
+                                <option value="text-sm">標準 (14px)</option>
+                                <option value="text-base">大 (16px)</option>
+                                <option value="text-lg">特大 (18px)</option>
+                                <option value="text-xl">極大 (20px)</option>
+                            </select>
+                        </div>
+
                         <button onclick="window.print()" class="flex items-center gap-1.5 text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow">
                             <i data-lucide="printer" class="w-4 h-4"></i> 印刷 / PDF保存を実行
                         </button>
@@ -531,6 +551,7 @@
         let autoCaptureIntervalId = null;
         let isAutoCapturing = false;
         let isAutoDetecting = false;
+        let currentPrintFontSize = 'text-sm'; // Default font size for procedure descriptions
 
         // Annotation State
         let editingStepId = null;
@@ -568,6 +589,7 @@
                 localStorage.setItem('v2d_doc_title', docTitle);
                 localStorage.setItem('v2d_steps_data', JSON.stringify(stepsData));
                 localStorage.setItem('v2d_pool_data', JSON.stringify(capturedPoolData));
+                localStorage.setItem('v2d_print_font_size', currentPrintFontSize);
             } catch (e) {
                 console.warn('LocalStorage save failed:', e);
             }
@@ -588,9 +610,22 @@
                 if (savedPool) {
                     capturedPoolData = JSON.parse(savedPool);
                 }
+                const savedFontSize = localStorage.getItem('v2d_print_font_size');
+                if (savedFontSize) {
+                    currentPrintFontSize = savedFontSize;
+                    const selectEl = document.getElementById('printFontSizeSelect');
+                    if (selectEl) selectEl.value = currentPrintFontSize;
+                }
             } catch (e) {
                 console.warn('LocalStorage load failed:', e);
             }
+        }
+
+        function changePrintFontSize(val) {
+            currentPrintFontSize = val;
+            saveStateToLocalStorage();
+            renderPreviewSteps();
+            showToast("説明文字サイズを変更しました", "type");
         }
 
         function clearAllData() {
@@ -1381,6 +1416,16 @@ JSON出力形式例:
                 return;
             }
 
+            // Mapping tailwind size class to print specific CSS class
+            const printClassMap = {
+                'text-xs': 'print-desc-xs',
+                'text-sm': 'print-desc-sm',
+                'text-base': 'print-desc-base',
+                'text-lg': 'print-desc-lg',
+                'text-xl': 'print-desc-xl'
+            };
+            const printDescClass = printClassMap[currentPrintFontSize] || 'print-desc-sm';
+
             container.innerHTML = stepsData.map((step, idx) => {
                 let tagMarkup = '';
                 if (step.type === 'point') {
@@ -1388,6 +1433,8 @@ JSON出力形式例:
                 } else if (step.type === 'warning') {
                     tagMarkup = `<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded border border-red-300">⚠ 注意</span>`;
                 }
+
+                const rawDesc = (step.description || '（解説なし）').trim();
 
                 return `
                 <div class="print-page-break border border-slate-200 rounded-xl p-5 bg-white shadow-sm flex flex-col gap-3">
@@ -1406,9 +1453,7 @@ JSON出力形式例:
                             </div>
                         ` : ''}
 
-                        <div class="${step.imageDataUrl ? 'md:col-span-6' : 'md:col-span-12'} text-xs text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
-                            ${escapeHtml(step.description || '（解説なし）')}
-                        </div>
+                        <div class="${step.imageDataUrl ? 'md:col-span-6' : 'md:col-span-12'} ${currentPrintFontSize} ${printDescClass} text-slate-800 leading-relaxed font-sans whitespace-pre-line text-left block" style="text-indent: 0; margin-top: 0; padding-top: 0;">${escapeHtml(rawDesc)}</div>
                     </div>
                 </div>
                 `;
